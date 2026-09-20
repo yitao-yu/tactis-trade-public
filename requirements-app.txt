@@ -1,0 +1,6 @@
+# Application-layer (live trading) dependencies — Venues 1 & 2 only.
+# Core training/backtest deps live in requirements.txt; install these extras
+# only on the machine/account that runs live venues:
+#     pip install -r requirements-app.txt
+ib_async
+easytrader

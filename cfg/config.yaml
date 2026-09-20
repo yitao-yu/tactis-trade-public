@@ -1,0 +1,218 @@
+defaults:
+  - _self_
+  - dataset: custom
+  - model: tactis_medium
+
+seed: 42
+
+training:
+  device: cuda
+  epochs_stage1: 32
+  epochs_stage2: 128
+  batch_size: 64
+  lr_stage1: 1e-3
+  lr_stage2: 1e-4
+  weight_decay: 1e-6
+  clip_grad: 10.0
+  val_every_epochs: 2
+  topk_checkpoints: 16
+  resume_from: null
+  metrics:
+    enabled: true
+    n_samples: 10
+    recall_k: 10
+    var_alpha: 0.05
+    sample_micro_batch: 8
+    allocators:
+      - name: proportional
+      - name: var_optimizer
+        n_steps: 100
+        optimizer_lr: 0.05
+        soft_cvar_weight: 1.0
+        max_loss: 0.01
+        constraints:
+          max_assets: 50
+          max_weight: 0.05
+      - name: mv_long
+        risk_aversion: 1.0
+        soft_cvar_weight: 1.0
+        max_loss: 0.01
+        n_steps: 100
+        optimizer_lr: 0.05
+        beta_penalty_weight: 0.1
+        position_limit: 0.05
+        constraints:
+          max_assets: 50
+          max_weight: 0.05
+      - name: var_deployment
+        risk_aversion: 1.0
+        soft_cvar_weight: 1.0
+        n_steps: 100
+        optimizer_lr: 0.01
+        beta_penalty_weight: 0.1
+        weight_lower: -0.05
+        weight_upper: 0.05
+        max_assets: 50
+        return_lower: -0.03
+        return_upper: 0.06
+        band_confidence: 0.95
+        turnover_coef: 0.0
+        use_hard_band: true
+
+rl:
+  enabled: false
+  resume_ckpt: null
+  epochs: 24
+  steps_per_epoch: null
+  batch_size: 16
+  micro_batch: 16
+  lr: 1e-4
+  clip_grad: 1.0
+  series_subset: 100
+  n_samples: 10
+  n_chunks: 1
+  reward: custom_reward_product # sharpe | mean_return | combined | custom_reward_product
+  reward_alpha: 0.5
+  reward_scale: 1.0         # multiplier for custom_reward_product: reward = scale * sharpe * (1 - vv)^is_pos, where is_pos = 1 if sharpe > 0 else 0
+  kl_beta: 0.2              # squared log-density constraint weight (anchor to the reference model)
+  logp_target: 25           # roughly logP of initial model before rl training
+  logp_penalty_weight: 0.0001 # L2 hinge weight
+  baseline_refresh_margin: 0.01 # promote current model to reference baseline if val sharpe exceeds this margin
+  freeze_embeddings: true
+  freeze_encoder: true
+  freeze_decoder: false
+  allocator:
+    # - name: var_deployment # with param here, effectively a long-short var_optimizer allocator
+    #   risk_aversion: 0.0 # (risk_aversion/2)·Var: 1.0
+    #   soft_cvar_weight: 1.0
+    #   n_steps: 100
+    #   optimizer_lr: 0.01
+    #   beta_penalty_weight: 0.0 # beta_penalty·(β^T w)^2: 0.1
+    #   weight_lower: -0.05
+    #   weight_upper: 0.05
+    #   max_assets: 50
+    #   return_lower: -0.01
+    #   return_upper: 1.0
+    #   band_confidence: 0.95
+    #   turnover_coef: 0.0
+    #   use_hard_band: false
+    - name: var_deployment # with param here, effectively a long-short market neutral(mv) allocator
+      risk_aversion: 1.0
+      soft_cvar_weight: 1.0
+      n_steps: 100
+      optimizer_lr: 0.01
+      beta_penalty_weight: 0.1
+      weight_lower: -0.05
+      weight_upper: 0.05
+      max_assets: 50
+      return_lower: -0.01
+      return_upper: 1.0
+      band_confidence: 0.95
+      turnover_coef: 0.0
+      use_hard_band: false
+  log_every_steps: 1
+  topk_checkpoints: 12
+
+eval:
+  seed: 42
+  split: test
+  checkpoint: null
+  n_samples: 10
+  recall_k: [1, 5, 10, 20, 50]
+  var_alpha: 0.05
+  sample_micro_batch: 8
+  batch_size: 64
+  output_dir: null
+  allocators:
+    - name: proportional
+    - name: var_optimizer
+      n_steps: 100
+      optimizer_lr: 0.05
+      soft_cvar_weight: 1.0
+      max_loss: 0.01
+      constraints:
+        max_assets: 50
+        max_weight: 0.05
+    - name: var_deployment
+      risk_aversion: 1.0
+      soft_cvar_weight: 1.0
+      n_steps: 100
+      optimizer_lr: 0.01
+      beta_penalty_weight: 0.1
+      weight_lower: -0.05
+      weight_upper: 0.05
+      max_assets: 50
+      return_lower: -0.03
+      return_upper: 0.06
+      band_confidence: 0.95
+      turnover_coef: 0.0
+      use_hard_band: true
+    - name: mv_long
+      risk_aversion: 1.0
+      soft_cvar_weight: 1.0
+      max_loss: 0.01
+      n_steps: 100
+      optimizer_lr: 0.05
+      beta_penalty_weight: 0.1
+      position_limit: 0.05
+      constraints:
+        max_assets: 50
+        max_weight: 0.05
+    
+backtest:
+  seed: 42
+  checkpoint: null            # required (ignored when mock_model=true)
+  start_date: "2025-01-02"
+  end_date: "2026-09-01"
+  base_end_date: "2024-12-31" # universe + norm stats frozen to <= this date
+  n_partitions: 4             # ≤ pred_len (hard limit: no forecast beyond pred_len)
+  n_samples: 10
+  execution_price: next_open  # next_open | next_close
+  commission_model: bps       # bps | ibkr
+  commission_bps: 0.0         # used when commission_model=bps (all markets)
+  account_notional: 100000    # real account size ($) for per-share/per-order fees
+  us_per_share: 0.005         # IBKR Fixed ($/share); Tiered = 0.0005–0.0035
+  us_min_per_order: 1.0       # IBKR per-order minimum ($)
+  us_max_pct: 0.01            # IBKR cap: 1% of trade value
+  us_commission_bps: 7.5      # rate mode: IBKR Tiered effective @ our order sizes
+  cn_commission_bps: 3.0      # CN A-share ~3 bp/side
+  slippage_bps: 0.0
+  allow_short: true
+  long_only: false            # true → ban shorts on ALL names (not just CN)
+  market_filter: null         # null | cn | us — restrict the allocatable universe
+  share_reset: at_roll        # none | at_roll
+  mock_model: false           # dev-only: random-span sampler, no GPU/model needed
+  var_alpha: 0.05
+  min_valid_series: 25        # skip re-allocation when fewer names are investable
+  max_gross_exposure: 1.0     # account cap: scale due delta so Σ|w| ≤ 1 (⇒ cash ≥ 0)
+  max_net_exposure: 1.0       # account cap: Σw ≤ 1 (no borrowing)
+  prev_weight_clip: 0.05      # clamp the turnover-penalty reference magnitude
+  output_dir: null            # defaults to <checkpoint_dir>/backtest
+  allocator:                  # span-tuned bands (≈×2 vs the daily eval defaults)
+    name: var_deployment
+    risk_aversion: 1.0
+    soft_cvar_weight: 1.0
+    n_steps: 100
+    optimizer_lr: 0.01
+    beta_penalty_weight: 0.1
+    weight_lower: -0.05
+    weight_upper: 0.05
+    max_assets: 50
+    return_lower: -0.06
+    return_upper: 0.12
+    band_confidence: 0.95
+    turnover_coef: 16.7             # τ′ × max(commission_rate, 3e-4) ≈ 0.005 @ 3 bp
+    commission_rate: 0.0003         # real per-trade fee (3 bp = CN); penalty floor is 3e-4
+    use_hard_band: true
+
+wandb:
+  enabled: false
+  project: tactis-trade
+  entity: null
+  mode: online
+
+hydra:
+  job:
+    chdir: true
+  run:
+    dir: ./outputs/${now:%Y-%m-%d}/${now:%H-%M-%S-%f}

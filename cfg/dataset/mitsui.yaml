@@ -1,0 +1,6 @@
+name: mitsui
+hist_len: 21
+pred_len: 4
+splits: [0.8, 0.1, 0.1]
+price_column: close
+use_official_test: false

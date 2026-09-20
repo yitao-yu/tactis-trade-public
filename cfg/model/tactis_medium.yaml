@@ -1,0 +1,43 @@
+name: tactis_medium
+flow_series_embedding_dim: 32
+copula_series_embedding_dim: 32
+flow_input_encoder_layers: 2
+copula_input_encoder_layers: 2
+input_encoding_normalization: false
+data_normalization: "none"
+loss_normalization: "series"
+bagging_size: 100
+skip_copula: true
+experiment_mode: "forecasting"
+positional_encoding:
+  dropout: 0.0
+flow_temporal_encoder:
+  attention_layers: 2
+  attention_heads: 4
+  attention_dim: 16
+  attention_feedforward_dim: 32
+  dropout: 0.1
+copula_temporal_encoder:
+  attention_layers: 2
+  attention_heads: 4
+  attention_dim: 16
+  attention_feedforward_dim: 32
+  dropout: 0.1
+copula_decoder:
+  min_u: 0.05
+  max_u: 0.95
+  attentional_copula:
+    attention_heads: 4
+    attention_layers: 1
+    attention_dim: 8
+    mlp_layers: 1
+    mlp_dim: 16
+    resolution: 20
+    attention_mlp_class: "_simple_linear_projection"
+    dropout: 0.1
+    activation_function: "relu"
+  dsf_marginal:
+    mlp_layers: 2
+    mlp_dim: 64
+    flow_layers: 2
+    flow_hid_dim: 32

@@ -1,0 +1,17 @@
+__pycache__/
+data/mitsui-commodity-prediction-challenge/
+data/custom-data/raw/
+data/custom-data/raw/cn/
+data/custom-data/raw/us/
+data/custom-data-test/raw
+models/
+outputs/
+wandb/
+temp_scripts/
+.opencode/
+# Live-venue secrets — never commit cookies / credentials
+.env
+secrets/
+*.cookie
+cookies*.json
+trading/cookies/

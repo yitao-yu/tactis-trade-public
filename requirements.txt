@@ -1,0 +1,11 @@
+gluonts
+hydra-core
+baostock
+yfinance
+kaggle
+matplotlib
+notebook
+numpy
+pandas
+# tactis @ git+https://github.com/Servicenow/tactis.git@tactis-2
+# wandb

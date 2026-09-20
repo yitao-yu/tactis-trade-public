@@ -1,0 +1,76 @@
+# Application-layer (live trading) config — Venue 1 (IBKR) and Venue 2 (Xueqiu).
+#
+# Kept SEPARATE from cfg/config.yaml so training/backtest configs are untouched.
+# Safety: local development is always dry-run.  A real order requires the venue
+# block's `live: true` AND the env var named by `live.require_env` (TACTIS_LIVE)
+# set to "1".  The kill-switch and per-order notional cap apply on top.
+#
+# Deploy notes (later, on EC2): headless IB Gateway uses port 4002 (paper) /4001 (live); 
+# Xueqiu cookies are provisioned there only (env or chmod-600 file).
+
+live:
+  require_env: TACTIS_LIVE          # must equal "1" to allow live submission
+  kill_switch_env: TACTIS_TRADING_KILL
+  kill_switch_file: outputs/KILL    # if this file exists, all submissions blocked
+  max_notional_default: 100000      # per-order cap fallback (account currency)
+
+# ---------------------------------------------------------------------------
+# Venue 1 — IBKR (US sleeve, long + short where shortable)
+# ---------------------------------------------------------------------------
+ibkr:
+  enabled: false
+  live: false                       # needs true AND TACTIS_LIVE=1 to trade
+  dry_run: true                     # explicit dry-run; false alone is not enough
+  host: "127.0.0.1"
+  port: 7497                        # TWS paper (Gateway paper = 4002; live = 4001/7496)
+  client_id: 17
+  allow_fractional: false           # whole shares unless the account allows fractions
+  order_type: MOO                   # MOO | LOO | MKT | LMT (at-the-open = OPG)
+  tif: OPG
+  allow_short: true                 # global shortability kill-switch (ANDed per market)
+  long_only_tickers: []
+  markets:                          # per-market contracts / lot size / shortability
+    us:                             # US stocks (SMART, USD, whole shares, shortable)
+      exchange: SMART
+      currency: USD
+      lot_size: 1
+      allow_short: true
+    cn:                             # China A-shares via Stock Connect (long-only, 100-lot)
+      sh_exchange: SEHKNTL          # Shanghai-HK Stock Connect
+      sz_exchange: SEHKSZSE         # Shenzhen-HK Stock Connect
+      currency: CNH
+      lot_size: 100
+      allow_short: false            # Stock Connect offers no A-share shorting
+  symbol_replace:                   # repo -> IB symbol transform (US only; reversed on sync)
+    ".": " "
+  contract_map: {}                  # ticker -> {symbol, secType, exchange, currency, primaryExchange}
+  max_notional: 100000              # per-order notional cap
+  costs:                            # pre-trade commission estimate (IBKR schedule)
+    commission_model: ibkr
+    account_notional: 100000
+    us_per_share: 0.005
+    us_min_per_order: 1.0
+    us_max_pct: 0.01
+    cn_commission_bps: 3.0
+    slippage_bps: 0.0
+
+# ---------------------------------------------------------------------------
+# Venue 2 — Xueqiu 雪球 portfolio (CN long-only, target-based full rebalance)
+# ---------------------------------------------------------------------------
+xueqiu:
+  enabled: false
+  live: false                       # needs true AND TACTIS_LIVE=1 to trade
+  dry_run: true
+  market: cn                        # cn | us | hk (one portfolio per market)
+  cube_symbol: null                 # e.g. "ZH123456"; required before live
+  cookie_env: XUEQIU_COOKIE         # env var holding the browser cookie
+  cookie_file: null                 # chmod-600 fallback (gitignored)
+  max_holdings: 30                  # Xueqiu hard limit
+  min_weight: 0.01                  # 1 % minimum per name
+  min_price: 0.0                    # reject quotes below this (HK rule uses ~1.0)
+  cash_proxy_ticker: null           # money-market fund for the residual cash
+  allowed_tickers: null             # optional universe restriction (e.g. CN list)
+  min_interval_s: 1.0               # request throttle
+  max_retries: 3
+  cost_rate: 0.0                    # informational cost estimate (fraction)
+  max_notional: 100000              # per-rebalance notional cap
