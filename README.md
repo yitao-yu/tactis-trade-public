@@ -52,7 +52,7 @@ python backtest.py \
 
 ## Backtest Results
 
-Test range 2025-2026.8.10(415 days)
+#### Test range 2025-2026.8.10(415 days)
 
 **0 bp**
 | Checkpoint | NAV | Total | GMRR/day | Sharpe | Max DD | Turnover | Costs | Vol | Cash (mean/min/max) | Beta | Alpha |
@@ -82,7 +82,9 @@ Test range 2025-2026.8.10(415 days)
 | rl0910 | 1.279 | +27.9 % | 0.0594 % | 0.0617 | −13.0 % | 0.114 | 0.106 | 15.3 % | 52 / 23 / 112 % | 0.75 | −1.9 % |
 | rl0914 | 1.315 | +31.5 % | 0.0661 % | 0.0742 | −11.5 % | 0.116 | 0.115 | 14.1 % | 40 / 2 / 100 % | 0.85 | −2.7 % |
 
-**Overall(all dates 2008-2026.8.10, training and val included)**
+#### Test range 2008-2026.8.10, training and val included
+
+**Overall**
 | | 3 bp | 10 bp |
 |---|---|---|
 | Final NAV | 3.724 (+272 %) | 2.297 (+130 %) |
