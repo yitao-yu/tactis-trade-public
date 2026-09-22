@@ -1043,7 +1043,7 @@ ledger append/reopen/replay (crash-resume).  24 tests across `tests/test_backtes
 Context: this repo's model is being adapted to trade the
 [Duke FinTech Trading Competition](https://fintechtradingcompetition.com/)
 (paper trading on Interactive Brokers with simulated money). Rolling-entry, open to
-all (not just university students), 3-month windows. Team = Yitao + agent.
+all (not just university students), 3-month windows. Team = one trader + coding agent.
 
 #### Scoring — this repo's Sharpe IS the competition metric
 
