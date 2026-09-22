@@ -1,0 +1,14 @@
+# Smoke image deps: guards/pipeline/ledger + inference path (CPU torch).
+# The full GPU stack (app/requirements.txt) is for the live model image.
+pyyaml>=6.0
+boto3>=1.26
+omegaconf>=2.3
+numpy>=1.24
+pandas>=2.0
+# CPU-only torch keeps the image small; swap for cu118 wheel on GPU instances
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch>=2.0
+tactis==0.1.3
+# primary data fetch
+yfinance>=0.2.40
+baostock>=0.8.8

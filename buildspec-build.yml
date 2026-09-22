@@ -1,0 +1,16 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin <AWS_ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com
+      - REPO=<AWS_ACCOUNT_ID>.dkr.ecr.us-east-2.amazonaws.com/tactis-live
+      - TAG=${IMAGE_TAG:-smoke}
+      - echo "Building $REPO:$TAG"
+  build:
+    commands:
+      - docker build -f app/Dockerfile.smoke -t $REPO:$TAG .
+  post_build:
+    commands:
+      - docker push $REPO:$TAG
+      - echo "pushed $REPO:$TAG"

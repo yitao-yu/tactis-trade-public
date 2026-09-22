@@ -1077,25 +1077,25 @@ Sharpe = (R_p − r_f) / σ_p
   wsl -u root -d Ubuntu ps aux | grep -E 'presel|backtest.py'
   wsl -u root -d Ubuntu tail -20 /root/venv0_preselect.log
   ```
-  (`wsl -u root -d ubuntu` is required — default user is `yitao-yu` and won't see root's screen.)
+  (`wsl -u root -d ubuntu` is required — the default user won't see root's screen.)
 
 #### Target production architecture
 
 ```
-EC2 (persistent)                  yitaopc / WSL (on-demand, WOL to wake)
+EC2 (persistent)                  local workstation / WSL (on-demand, WOL to wake)
 ┌─────────────────────┐          ┌─────────────────────────────┐
 │ IB Gateway headless │          │ TACTiS inference + RL train │
 │ ib_insync client    │          │ HF_ENDPOINT=hf-mirror.com   │
 │ daily EOD scheduler →───(ssh)→│ (HF Hub blocked from CN)    │
-│ report/order flow   │          │ data sync EC2 ↔ yitaopc     │
+│ report/order flow   │          │ data sync EC2 ↔ workstation     │
 └─────────────────────┘          └─────────────────────────────┘
 ```
 
 - **EC2 = always-on trading node**: headless IB Gateway (Linux), `ib_insync` to
   place orders, cron for end-of-day scheduling.
-- **yitaopc = compute on demand**: WOL to wake, run TACTiS inference / RL training,
+- **workstation = compute on demand**: WOL to wake, run TACTiS inference / RL training,
   send target weights back. HF mirror env var required.
-- Data & weights sync between EC2 and yitaopc via a reliable path (rsync / shared NAS).
+- Data & weights sync between EC2 and the workstation via a reliable path (rsync / shared NAS).
 
 #### TODO / decision points (draft, to be refined)
 

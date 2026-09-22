@@ -1,0 +1,34 @@
+# — EventBridge schedule: EOD trigger, 15:45 CT on US trading days = 20:45 UTC
+#   (cron in UTC). Xueqiu CN window handled by separate rule.
+resource "aws_scheduler_schedule" "ibkr_eod" {
+  name       = "tactis-ibkr-eod"
+  flexible_time_window { mode = "OFF" }
+  schedule_expression = "cron(45 20 ? * MON-FRI *)"
+  target {
+    arn      = "arn:aws:batch::${data.aws_caller_identity.current.account_id}:job-queue/tactis-live-queue"
+    role_arn = aws_iam_role.job.arn
+    retry_policy { maximum_retry_attempts = 2 }
+    attempt_deadline_minutes = 45
+    ecs_parameters {
+      task_definition_arn       = aws_batch_job_definition.live.arn
+      launch_type               = "EC2"
+      network_configuration {
+        assign_public_ip = true
+        security_groups  = [aws_security_group.task_sg.id]
+        subnets          = data.aws_subnets.public.ids
+      }
+      resource_requirements = []
+      container_overrides {
+        container_name = null
+        depends_on     = null
+        command        = []
+        environment = [
+          { name = "TACTIS_VENUE", value = "ibkr" },
+          { name = "TACTIS_WEIGHTS_FILE", value = "/tmp/weights.json" },
+        ]
+      }
+    }
+  }
+}
+
+data "aws_caller_identity" "current" {}

@@ -1,0 +1,39 @@
+# Smoke-test image: app layer + inference path (CPU torch).
+# Exercises everything a Batch job runs: entrypoint wait loop, data fetch,
+# checkpoint -> weights inference (CPU), config load, LiveGuard dry-run,
+# ledger write. No GPU needed.
+# Build context must be the REPO ROOT (tactis-trade/), not app/:
+#   docker build -f app/Dockerfile.smoke -t tactis-live:smoke .
+FROM python:3.10-slim
+
+ENV PYTHONUNBUFFERED=1
+# awscli for the entrypoint's s3 cp of checkpoints (boto3 alone can't do it
+# from shell); kept slim by --no-cache-dir
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl unzip ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && curl -sSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip \
+    && unzip -q /tmp/awscliv2.zip -d /tmp && /tmp/aws/install && rm -rf /tmp/aws*
+
+WORKDIR /opt/app
+
+COPY app/requirements-smoke.txt .
+RUN pip3 install --no-cache-dir -r requirements-smoke.txt
+
+COPY app/creds.py app/pipeline.py app/run_live.py app/infer.py \
+     app/data_fetch.py app/calc_norm.py app/entrypoint.sh /opt/app/
+RUN chmod +x /opt/app/entrypoint.sh
+COPY app/xueqiu/ /opt/app/xueqiu/
+COPY app/weights_smoke.json /opt/app/weights.json
+COPY app/universe/ /opt/app/universe/
+COPY cfg/application.yaml /opt/cfg/application.yaml
+COPY cfg/model/tactis_medium.yaml /opt/model/tactis_medium.yaml
+COPY model.py /opt/model_src/model.py
+COPY trainer.py /opt/model_src/trainer.py
+COPY trading/ /opt/trading/
+
+# infer.py imports model.py/trainer.py from repo root; expose via PYTHONPATH
+ENV PYTHONPATH=/opt/model_src:/opt/app
+ENV TACTIS_MODEL_CFG=/opt/model/tactis_medium.yaml
+
+ENTRYPOINT ["/opt/app/entrypoint.sh"]

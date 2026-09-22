@@ -1,0 +1,28 @@
+# Docker Compose — LOCAL testing only. AWS Batch namespaces the same two
+# containers in its job definition (batch/jobdef.tf).
+# Run:  IB_GATEWAY_USER=x IB_GATEWAY_PASSWORD=y docker compose up
+version: "3.9"
+
+services:
+  ib-gateway:
+    image: ghcr.io/gnzsnz/ib-gateway:latest
+    environment:
+      - TRADING_MODE=paper
+      - VNC_SERVER_ENABLED=no
+      - IB_GATEWAY_VERSION=1019
+    ports:
+      - "4002:4002"
+
+  runner:
+    build: .
+    depends_on:
+      ib-gateway:
+        condition: service_healthy
+    environment:
+      - TACTIS_VENUE=ibkr
+      - TACTIS_WEIGHTS_FILE=/tmp/weights.json
+      - TACTIS_FORCE_DRYRUN=1
+      - IB_GATEWAY_HOST=ib-gateway
+    volumes:
+      - ./:/opt/app
+      - ~/.tactis:/root/.tactis

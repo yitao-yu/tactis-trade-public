@@ -15,3 +15,7 @@ secrets/
 *.cookie
 cookies*.json
 trading/cookies/
+
+# Terraform local state
+*.tfstate
+*.tfstate.*
